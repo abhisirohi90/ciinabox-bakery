@@ -133,7 +133,8 @@ fi
 
 echo "{\"${CLIENT}\":{\"version\":\"${BUILD_NUMBER}\",\"build_id\":\"${7}\",\"build_sha\":\"${8}\"}}" > build/override.json
 
-/opt/packer/packer build -machine-readable -var-file=${PACKER_BUILD_PARAMS} ${CLI_OPTS} ${PACKER_BUILD_TMPL} ${DEBUG_FLAG} | tee build/build.log
+packer init ${PACKER_BUILD_TMPL}
+packer build -machine-readable -var-file=${PACKER_BUILD_PARAMS} ${CLI_OPTS} ${PACKER_BUILD_TMPL} ${DEBUG_FLAG} | tee build/build.log
 
 #extract base AMI-ID
 CURRENT_REGION=`curl -s http://169.254.169.254/latest/dynamic/instance-identity/document|grep region|awk -F\" '{print $4}'`
