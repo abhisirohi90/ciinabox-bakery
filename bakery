@@ -133,8 +133,31 @@ fi
 
 echo "{\"${CLIENT}\":{\"version\":\"${BUILD_NUMBER}\",\"build_id\":\"${7}\",\"build_sha\":\"${8}\"}}" > build/override.json
 
-packer init ${PACKER_BUILD_TMPL}
-packer build -machine-readable -var-file=${PACKER_BUILD_PARAMS} ${CLI_OPTS} ${PACKER_BUILD_TMPL} ${DEBUG_FLAG} | tee build/build.log
+# Convert template to HCL2
+PACKER_BUILD_TMPL_HCL=${PACKER_BUILD_TMPL%.json}.pkr.hcl
+echo "Converting JSON template to HCL2..."
+packer hcl2_upgrade -with-annotations -input-file=${PACKER_BUILD_TMPL} -output-file=${PACKER_BUILD_TMPL_HCL}
+
+# View generated HCL2 template
+echo "========= GENERATED HCL2 TEMPLATE ========="
+cat ${PACKER_BUILD_TMPL_HCL}
+echo "==========================================="
+
+# Convert vars file to .pkrvars.hcl format (optional step if needed)
+PACKER_BUILD_PARAMS_HCL=${PACKER_BUILD_PARAMS%.json}.pkrvars.hcl
+jq -r 'to_entries | map("\(.key) = \"\(.value)\"") | .[]' ${PACKER_BUILD_PARAMS} > ${PACKER_BUILD_PARAMS_HCL}
+
+# View generated HCL2 template
+echo "========= GENERATED HCL2 TEMPLATE ========="
+cat ${PACKER_BUILD_PARAMS_HCL}
+echo "==========================================="
+
+# Initialize and build
+echo "Initializing packer template..."
+packer init ${PACKER_BUILD_TMPL_HCL}
+
+echo "Running packer build..."
+packer build -machine-readable -var-file=${PACKER_BUILD_PARAMS_HCL} ${CLI_OPTS} ${PACKER_BUILD_TMPL_HCL} ${DEBUG_FLAG} | tee build/build.log
 
 #extract base AMI-ID
 CURRENT_REGION=`curl -s http://169.254.169.254/latest/dynamic/instance-identity/document|grep region|awk -F\" '{print $4}'`
