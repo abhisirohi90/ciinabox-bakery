@@ -133,27 +133,30 @@ fi
 
 echo "{\"${CLIENT}\":{\"version\":\"${BUILD_NUMBER}\",\"build_id\":\"${7}\",\"build_sha\":\"${8}\"}}" > build/override.json
 
-# Convert template to HCL2
+# Define HCL2 paths
 PACKER_BUILD_TMPL_HCL=${PACKER_BUILD_TMPL%.json}.pkr.hcl
-echo "Converting JSON template to HCL2..."
-packer hcl2_upgrade -with-annotations -input-file=${PACKER_BUILD_TMPL} -output-file=${PACKER_BUILD_TMPL_HCL}
-
-# View generated HCL2 template
-echo "========= GENERATED HCL2 TEMPLATE ========="
-cat ${PACKER_BUILD_TMPL_HCL}
-echo "==========================================="
-
-# Convert vars file to .pkrvars.hcl format (optional step if needed)
 PACKER_BUILD_PARAMS_HCL=${PACKER_BUILD_PARAMS%.json}.pkrvars.hcl
+
+# Convert JSON template to HCL2
+echo "Converting Packer JSON template to HCL2..."
+packer hcl2_upgrade -with-annotations -output-file=${PACKER_BUILD_TMPL_HCL} ${PACKER_BUILD_TMPL}
+
+# Convert vars file (JSON -> HCL2)
+echo "Converting Packer vars JSON to HCL2..."
 jq -r 'to_entries | map("\(.key) = \"\(.value)\"") | .[]' ${PACKER_BUILD_PARAMS} > ${PACKER_BUILD_PARAMS_HCL}
 
-# View generated HCL2 template
-echo "========= GENERATED HCL2 TEMPLATE ========="
+# Display generated .pkr.hcl
+echo "========= GENERATED TEMPLATE (.pkr.hcl) ========="
+cat ${PACKER_BUILD_TMPL_HCL}
+echo "==============================================="
+
+# Display generated .pkrvars.hcl
+echo "========= GENERATED VARS (.pkrvars.hcl) ========="
 cat ${PACKER_BUILD_PARAMS_HCL}
-echo "==========================================="
+echo "==============================================="
 
 # Initialize and build
-echo "Initializing packer template..."
+echo "Initializing packer..."
 packer init ${PACKER_BUILD_TMPL_HCL}
 
 echo "Running packer build..."
